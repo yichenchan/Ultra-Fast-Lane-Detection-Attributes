@@ -16,13 +16,14 @@ def str2bool(v):
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('config', help = 'path to config file')
-    parser.add_argument('--local_rank', type=int, default=0)
+    parser.add_argument('--config', help = 'path to config file')
+    parser.add_argument('--local-rank', type=int, default=0)
 
     parser.add_argument('--dataset', default = None, type = str)
     parser.add_argument('--data_root', default = None, type = str)
     parser.add_argument('--epoch', default = None, type = int)
-    parser.add_argument('--batch_size', default = None, type = int)
+    parser.add_argument('--train_batch_size', default = None, type = int)
+    parser.add_argument('--test_batch_size', default = None, type = int)
     parser.add_argument('--optimizer', default = None, type = str)
     parser.add_argument('--learning_rate', default = None, type = float)
     parser.add_argument('--weight_decay', default = None, type = float)
@@ -33,7 +34,7 @@ def get_args():
     parser.add_argument('--warmup', default = None, type = str)
     parser.add_argument('--warmup_iters', default = None, type = int)
     parser.add_argument('--backbone', default = None, type = str)
-    parser.add_argument('--griding_num', default = None, type = int)
+    parser.add_argument('--num_x_grid', default = None, type = int)
     parser.add_argument('--use_aux', default = None, type = str2bool)
     parser.add_argument('--sim_loss_w', default = None, type = float)
     parser.add_argument('--shp_loss_w', default = None, type = float)
@@ -45,6 +46,8 @@ def get_args():
     parser.add_argument('--test_work_dir', default = None, type = str)
     parser.add_argument('--num_lanes', default = None, type = int)
     parser.add_argument('--auto_backup', action='store_true', help='automatically backup current code in the log path')
+    parser.add_argument('--demo_weights', type=str, default=None)
+    parser.add_argument('--demo_path', type=str, default=None)
 
     return parser
 
@@ -52,18 +55,20 @@ def merge_config():
     args = get_args().parse_args()
     cfg = Config.fromfile(args.config)
 
-    items = ['dataset','data_root','epoch','batch_size','optimizer','learning_rate',
+    items = ['dataset','data_root','epoch','train_batch_size','test_batch_size','optimizer','learning_rate',
     'weight_decay','momentum','scheduler','steps','gamma','warmup','warmup_iters',
-    'use_aux','griding_num','backbone','sim_loss_w','shp_loss_w','note','log_path',
+    'use_aux','num_x_grid','backbone','sim_loss_w','shp_loss_w','note','log_path',
     'finetune','resume', 'test_model','test_work_dir', 'num_lanes']
+
     for item in items:
         if getattr(args, item) is not None:
             dist_print('merge ', item, ' config')
             setattr(cfg, item, getattr(args, item))
+
     return args, cfg
 
 
-def save_model(net, optimizer, epoch,save_path, distributed):
+def save_model(net, optimizer, epoch, save_path, distributed):
     if is_main_process():
         model_state_dict = net.state_dict()
         state = {'model': model_state_dict, 'optimizer': optimizer.state_dict()}
@@ -97,13 +102,11 @@ def cp_projects(auto_backup, to_path):
                 dist_print('If the program is stuck, it might be copying large files in this directory. please don\'t set --auto_backup. Or please make you working directory clean, i.e, don\'t place large files like dataset, log results under this directory.')
                 warning_flag = False
 
-
-
-
 import datetime, os
 def get_work_dir(cfg):
     now = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-    hyper_param_str = '_lr_%1.0e_b_%d' % (cfg.learning_rate, cfg.batch_size)
+    hyper_param_str = '_lr_%1.0e_b_%d' % (cfg.learning_rate, cfg.train_batch_size)
+    # print('===========',cfg.log_path, now + hyper_param_str + cfg.note)
     work_dir = os.path.join(cfg.log_path, now + hyper_param_str + cfg.note)
     return work_dir
 
