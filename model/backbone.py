@@ -16,16 +16,40 @@ class resnet(torch.nn.Module):
         super(resnet,self).__init__()
         if layers == '18':
             model = torchvision.models.resnet18(pretrained=pretrained)
+            self.outDim1 = 64
+            self.outDim2 = 128
+            self.outDim3 = 256
+            self.outDim4 = 512
         elif layers == '34':
             model = torchvision.models.resnet34(pretrained=pretrained)
+            self.outDim1 = 64
+            self.outDim2 = 128
+            self.outDim3 = 256
+            self.outDim4 = 512
         elif layers == '50':
             model = torchvision.models.resnet50(pretrained=pretrained)
+            self.outDim1 = 256
+            self.outDim2 = 512
+            self.outDim3 = 1024
+            self.outDim4 = 2048
         elif layers == '101':
             model = torchvision.models.resnet101(pretrained=pretrained)
+            self.outDim1 = 256
+            self.outDim2 = 512
+            self.outDim3 = 1024
+            self.outDim4 = 2048
         elif layers == '152':
             model = torchvision.models.resnet152(pretrained=pretrained)
+            self.outDim1 = 256
+            self.outDim2 = 512
+            self.outDim3 = 1024
+            self.outDim4 = 2048
         elif layers == '50next':
             model = torchvision.models.resnext50_32x4d(pretrained=pretrained)
+            self.outDim1 = 256
+            self.outDim2 = 512
+            self.outDim3 = 1024
+            self.outDim4 = 2048
         elif layers == '101next':
             model = torchvision.models.resnext101_32x8d(pretrained=pretrained)
         elif layers == '50wide':
@@ -53,4 +77,5 @@ class resnet(torch.nn.Module):
         x2 = self.layer2(x)
         x3 = self.layer3(x2)
         x4 = self.layer4(x3)
-        return x2,x3,x4
+         
+        return x2, x3, x4
