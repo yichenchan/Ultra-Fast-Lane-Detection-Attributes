@@ -27,13 +27,13 @@ class FreeScale(object):
         self.size = size  # (h, w)
 
     def __call__(self, img, mask):
-        return img.resize((self.size[1], self.size[0]), Image.BILINEAR), mask.resize((self.size[1], self.size[0]), Image.NEAREST)
+        return cv2.resize(img, (self.size[1], self.size[0]), interpolation=cv2.BILINEAR), cv2.resize(mask, (self.size[1], self.size[0]), interpolation=cv2.INTER_NEAREST)
 
 class FreeScaleMask(object):
     def __init__(self,size):
         self.size = size
     def __call__(self,mask):
-        return mask.resize((self.size[1], self.size[0]), Image.NEAREST)
+        return cv2.resize(mask, (self.size[1], self.size[0]), interpolation=cv2.INTER_NEAREST)
 
 class Scale(object):
     def __init__(self, size):
