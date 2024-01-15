@@ -6,27 +6,25 @@ import torch
 import scipy.special, tqdm
 import numpy as np
 import torchvision.transforms as transforms
-from data.dataset import LaneTestDataset
 from data.constant import culane_row_anchor, tusimple_row_anchor
 from PIL import Image
+import argparse
+from utils.config import Config
 
-# Export to TorchScript that can be used for LibTorch
+parser = argparse.ArgumentParser()
+parser.add_argument('--weight', type=str)
+parser.add_argument('--output', type=str)
+parser.add_argument('--config', type=str)
+opt = parser.parse_args()
+cfg = Config.fromfile(opt.config)
 
-torch.backends.cudnn.benchmark = True
+dist_print('start exporting...')
+assert cfg.backbone in ['18','34','50','101','152','50next','101next','50wide','101wide']
 
-# From cuLANE, Change this line if you are using TuSimple
-cls_num_per_lane = 18
-griding_num = 200
-backbone =18
-
-net = parsingNet(pretrained = False,backbone='18', cls_dim = (griding_num+1,cls_num_per_lane,4),
+net = parsingNet(pretrained = False, backbone=cfg.backbone, objectness_dim = (cfg.num_x_grid + 1, cfg.num_y_grid, cfg.num_lanes),
                 use_aux=False)
 
-# Change test_model where your model stored.
-test_model = '/data/Models/UltraFastLaneDetection/culane_18.pth'
-
-#state_dict = torch.load(test_model, map_location='cpu')['model'] # CPU
-state_dict = torch.load(test_model, map_location='cuda')['model'] # CUDA
+state_dict = torch.load(opt.weight, map_location='cpu')['model']
 compatible_state_dict = {}
 for k, v in state_dict.items():
     if 'module.' in k:
@@ -37,11 +35,11 @@ for k, v in state_dict.items():
 net.load_state_dict(compatible_state_dict, strict=False)
 net.eval()
 
-# Test Input Image
-img = torch.zeros(1, 3, 288, 800)  # image size(1,3,320,192) iDetection
-y = net(img)  # dry run
-
+img = torch.zeros(1, 3, cfg.resized_height, cfg.resized_width)  
+y = net(img)  
 ts = torch.jit.trace(net, img)
 
-#ts.save('UFLD.torchscript-cpu.pt') # CPU
-ts.save('UFLD.torchscript-cuda.pt') # CUDA
+input_names = ["input"]
+output_names = ["x_values", "color_cls", "func_cls", "type_cls", "status_cls", "lighting_cls", "weather_cls", "env_cls"]
+
+torch.onnx.export(net, img, opt.output, opset_version=12, input_names=input_names, output_names=output_names)
