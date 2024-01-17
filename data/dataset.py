@@ -52,11 +52,11 @@ class LaneDataset(torch.utils.data.Dataset):
         # 预处理输入图像------------------
         # 数据增强
         if(self.augment):
-            # img = augment_hsv(img)  # 处理 bgr 
-            # img = hist_equalize(img) # 处理 bgr
-            # img = cutout(img) 
+            img = augment_hsv(img)  # 处理 bgr 
+            img = hist_equalize(img) # 处理 bgr
+            img = cutout(img) 
             img, label = cutoutBackground(img, label)
-            # img, label = random_perspective(img, label)
+            img, label = random_perspective(img, label)
             # 这里出来的 img 是 bgr 顺序
             # label 出来的顺序是 (lane_label, type_label, func_color_label)
 
